@@ -28,8 +28,10 @@ public class ArtifactLayers {
   // Used for layer names.
   public static final String CLASSES = "classes";
   public static final String RESOURCES = "resources";
+  public static final String RESOURCES = "resources3";
   public static final String DEPENDENCIES = "dependencies";
   public static final String SNAPSHOT_DEPENDENCIES = "snapshot dependencies";
+  public static final String SNAPSHOT_DEPENDENCIES3 = "snapshot dependencies3";
 
   private ArtifactLayers() {}
 
@@ -45,6 +47,25 @@ public class ArtifactLayers {
    * @throws IOException if io exception occurs when reading from the source directory
    */
   public static FileEntriesLayer getDirectoryContentsAsLayer(
+      String layerName,
+      Path sourceRoot,
+      Predicate<Path> pathFilter,
+      AbsoluteUnixPath basePathInContainer)
+      throws IOException {
+    FileEntriesLayer.Builder builder = FileEntriesLayer.builder().setName(layerName);
+    new DirectoryWalker(sourceRoot)
+        .filterRoot()
+        .filter(path -> pathFilter.test(path))
+        .walk(
+            path -> {
+              AbsoluteUnixPath pathOnContainer =
+                  basePathInContainer.resolve(sourceRoot.relativize(path));
+              builder.addEntry(path, pathOnContainer);
+            });
+    return builder.build();
+  }
+  
+    public static FileEntriesLayer getDirectoryContentsAsLayer03(
       String layerName,
       Path sourceRoot,
       Predicate<Path> pathFilter,
