@@ -51,7 +51,40 @@ public class ContainerBuilders {
    * @throws InvalidImageReferenceException if the baseImage reference cannot be parsed
    * @throws FileNotFoundException if credential helper file cannot be found
    */
+  
+  // here here hrehe hahahahha
   public static JibContainerBuilder create(
+      String baseImageReference,
+      Set<Platform> platforms,
+      CommonCliOptions commonCliOptions,
+      ConsoleLogger logger)
+      throws InvalidImageReferenceException, FileNotFoundException {
+    if (baseImageReference.startsWith(DOCKER_DAEMON_IMAGE_PREFIX)) {
+      return Jib.from(
+          DockerDaemonImage.named(baseImageReference.replaceFirst(DOCKER_DAEMON_IMAGE_PREFIX, "")));
+    }
+    if (baseImageReference.startsWith(TAR_IMAGE_PREFIX)) {
+      return Jib.from(
+          TarImage.at(Paths.get(baseImageReference.replaceFirst(TAR_IMAGE_PREFIX, ""))));
+    }
+    ImageReference imageReference =
+        ImageReference.parse(baseImageReference.replaceFirst(REGISTRY_IMAGE_PREFIX, ""));
+    RegistryImage registryImage = RegistryImage.named(imageReference);
+    DefaultCredentialRetrievers defaultCredentialRetrievers =
+        DefaultCredentialRetrievers.init(
+            CredentialRetrieverFactory.forImage(
+                imageReference,
+                logEvent -> logger.log(logEvent.getLevel(), logEvent.getMessage())));
+    Credentials.getFromCredentialRetrievers(commonCliOptions, defaultCredentialRetrievers)
+        .forEach(registryImage::addCredentialRetriever);
+    JibContainerBuilder containerBuilder = Jib.from(registryImage);
+    if (!platforms.isEmpty()) {
+      containerBuilder.setPlatforms(platforms);
+    }
+    return containerBuilder;
+  }
+  
+    public static JibContainerBuilder02 create(
       String baseImageReference,
       Set<Platform> platforms,
       CommonCliOptions commonCliOptions,
